@@ -1,0 +1,5 @@
+# src/test/resources/application-test.yml
+weather:
+  api:
+    base-url: http://localhost:9561
+    key: dummy-api-key
