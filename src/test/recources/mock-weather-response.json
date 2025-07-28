@@ -1,0 +1,39 @@
+{
+  "cod": "200",
+  "message": 0,
+  "cnt": 40,
+  "list": [
+    {
+      "dt": 1609459200,
+      "main": {
+        "temp": 283.87,
+        "temp_min": 283.87,
+        "temp_max": 283.87,
+        "pressure": 1012,
+        "sea_level": 1012,
+        "grnd_level": 1011,
+        "humidity": 93,
+        "temp_kf": 0
+      },
+      "weather": [
+        {
+          "id": 801,
+          "main": "Clouds",
+          "description": "few clouds",
+          "icon": "02d"
+        }
+      ],
+      "clouds": {
+        "all": 18
+      },
+      "wind": {
+        "speed": 2.35,
+        "deg": 266
+      },
+      "sys": {
+        "pod": "d"
+      },
+      "dt_txt": "2021-01-01 12:00:00"
+    }
+  ]
+}
