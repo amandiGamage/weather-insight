@@ -1,5 +1,7 @@
 package com.amandi.weather.client;
 
+import com.amandi.weather.exception.CityNotFoundException;
+import com.amandi.weather.exception.ExternalApiException;
 import com.amandi.weather.model.WeatherResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,8 +11,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 /**
- * Basic version of WeatherApiClient that calls OpenWeatherMap API
- * without custom exception handling.
+ * Utility class that interacts with the OpenWeatherMap API.
  */
 @Component
 @RequiredArgsConstructor
@@ -46,27 +47,23 @@ public class WeatherApiClient {
                     )
                     .retrieve()
                     .onStatus(status -> status.is4xxClientError(), response -> {
-                        log.warn("Invalid city name or request: {}", city);
-                        return response.createException().flatMap(error -> {
-                            throw new RuntimeException("City not found or invalid: " + city);
-                        });
+                        log.warn("City not found: {}", city);
+                        return response.bodyToMono(String.class)
+                                .map(body -> new CityNotFoundException("City not found: " + city));
                     })
                     .onStatus(status -> status.is5xxServerError(), response -> {
                         log.error("Server error from OpenWeatherMap API");
-                        return response.createException().flatMap(error -> {
-                            throw new RuntimeException("Weather API server error");
-                        });
+                        return response.bodyToMono(String.class)
+                                .map(body -> new ExternalApiException("External API server error"));
                     })
                     .bodyToMono(WeatherResponse.class)
-                    .block();
-
+                    .block(); // Blocking here is okay since the method is called inside an async method
 
         } catch (WebClientResponseException e) {
-            log.error("Error response from OpenWeatherMap: {}", e.getMessage());
-            throw new RuntimeException("Failed to retrieve data from weather API: " + e.getMessage(), e);
+            throw new ExternalApiException("Failed to retrieve data from OpenWeatherMap API", e);
         } catch (Exception e) {
             log.error("Unexpected error occurred while calling weather API", e);
-            throw new RuntimeException("Unexpected error occurred", e);
+            throw new ExternalApiException("Unexpected error occurred", e);
         }
     }
 }

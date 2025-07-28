@@ -1,17 +1,17 @@
 package com.amandi.weather.service.impl;
 
 import com.amandi.weather.model.WeatherResponse;
-import com.amandi.weather.model.WeatherResponse.ForecastData;
 import com.amandi.weather.model.WeatherSummary;
-import com.amandi.weather.service.WeatherService;
 import com.amandi.weather.client.WeatherApiClient;
+import com.amandi.weather.exception.CityNotFoundException;
+import com.amandi.weather.exception.ExternalApiException;
+import com.amandi.weather.service.WeatherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -39,11 +39,21 @@ public class WeatherServiceImpl implements WeatherService {
     public CompletableFuture<WeatherSummary> getWeatherSummary(String city) {
         log.info("Fetching weather summary for city: {}", city);
 
-        WeatherResponse response = weatherApiClient.getForecast(city);
+        WeatherResponse response;
+
+        try {
+            response = weatherApiClient.getForecast(city);
+        } catch (ExternalApiException e) {
+            log.error("External API error occurred while fetching data for city: {}", city, e);
+            throw new ExternalApiException("Failed to fetch weather data for city: " + city, e);
+        } catch (Exception e) {
+            log.error("Unexpected error occurred while fetching weather data for city: {}", city, e);
+            throw new ExternalApiException("An error occurred while retrieving weather data for city: " + city, e);
+        }
 
         // Group temperature readings by date
         Map<String, List<Double>> dailyTemperatures = new HashMap<>();
-        for (ForecastData data : response.getForecastList()) {
+        for (WeatherResponse.ForecastData data : response.getForecastList()) {
             String date = data.getDateTime().split(" ")[0]; // Extract date part
             dailyTemperatures
                     .computeIfAbsent(date, k -> new ArrayList<>())
@@ -62,7 +72,8 @@ public class WeatherServiceImpl implements WeatherService {
                 ));
 
         if (averagePerDay.isEmpty()) {
-            throw new RuntimeException("No weather data available for city: " + city);
+            log.error("No weather data available for city: {}", city);
+            throw new CityNotFoundException("No weather data available for city: " + city);
         }
 
         // Determine hottest and coldest days
