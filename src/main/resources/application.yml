@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: weather-insight
+  main:
+    allow-bean-definition-overriding: true
+
+  cache:
+    type: caffeine
+
+  jackson:
+    serialization:
+      indent_output: true
+
+  profiles:
+    active: dev
+
+logging:
+  level:
+    root: INFO
+    com.amandi.weather: DEBUG
+    org.springframework.web.reactive.function.client: WARN
+
+weather:
+  api:
+    base-url: https://api.openweathermap.org/data/2.5/forecast
+    key: ${OPENWEATHER_API_KEY}   # Secure key loaded from environment variable
+
+---
+
+# Async Configuration
+spring.task.execution.pool:
+  core-size: 5
+  max-size: 10
+  queue-capacity: 25
+  keep-alive: 10s
+
+---
+
+# Caching Configuration (via Caffeine)
+caffeine:
+  spec: maximumSize=1000,expireAfterWrite=30m
